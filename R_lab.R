@@ -71,3 +71,57 @@ spp_threat_stack <- stack(threats_crop,spp_res)
 plot(spp_threat_stack,col=cols)
 # Reclassify
 hist(spp_res,main="Species Raster Values")
+# notice that in the following, we are OVERWRITING the original spp_res object.
+# This is okay in this instance since we won't be using the old version, but
+# often it is better to assign any output of a function to a new variable or object
+spp_res <- reclassify(spp_res,rcl=c(-Inf,0,NA))
+hist(spp_res,main="Species Raster Values, Zeroes Removed") # did the function do what we were hoping?
+plot(spp_res)
+
+
+#?quantile what does the quantile function do?
+spp_cutoff <- quantile(spp_res,0.8) # Find the value of the 80th percentile
+spp_maxVal <- cellStats(spp_res,max) #find the maximum
+
+# Our reclassification matrix. Make sure you know what this is saying
+rcl_mat <- c(-Inf,spp_cutoff,0,
+             spp_cutoff,spp_maxVal,1)
+
+# Reclassify the species layer
+spp_binary <- reclassify(spp_res,rcl=rcl_mat)
+
+# Because we have binary data now, I want to change the color scheme again
+binary_cols <- c("white","firebrick")
+plot(spp_binary,col=binary_cols,legend=F,main="Top 20% of Species Richness")
+map('world',fill=T,add=T,col='gray')
+
+# Reclassify threats
+threats_crop <- reclassify(threats_crop,rcl=c(-Inf,0,NA))
+hist(threats_crop,main="Threat Raster Values, Zeroes Removed") # did the function do what we were hoping?
+plot(threats_crop)
+#?quantile what does the quantile function do?
+threats_cutoff <- quantile(threats_crop,0.8) # Find the value of the 80th percentile
+threats_maxVal <- cellStats(threats_crop,max) #find the maximum
+
+# Our reclassification matrix. Make sure you know what this is saying
+rcl_mat <- c(-Inf,threats_cutoff,0,
+             threats_cutoff,threats_maxVal,1)
+
+# Reclassify the species layer
+threats_binary <- reclassify(threats_crop,rcl=rcl_mat)
+
+# Because we have binary data now, I want to change the color scheme again
+binary_cols <- c("white","firebrick")
+plot(threats_binary,col=binary_cols,legend=F,main="Top 20% of Cumulative Threats")
+map('world',fill=T,add=T,col='gray')
+
+# the hotspots
+hotspots <- overlay(spp_binary,threats_binary,fun=function(x,y){x+y})
+
+# color breakpoints. We need three colors now! (cell values of 0,1,or 2)
+brks_hotspots <- seq(0,3,length.out=4) 
+hotspot_cols <- c("white","lightblue","firebrick") #
+
+# plot the hotspots!
+plot(hotspots,col=hotspot_cols,legend=F,main="Hotspots");map('world',fill=T,add=T,col='gray80')
+
